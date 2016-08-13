@@ -21,7 +21,9 @@
 //            5. Input recruitment units REMAIN 1000's of crabs (in accordance 
 //                  with TCSAM2013 output file for projection model)
 //            6. Initial test with 2015 input file worked fine.
-
+//            7. Added pAvgLnF_XXXF inputs, where XXX= TCF, SCF, RKF or GTF
+//                  for ln-scale female F offsets
+//
 //-------------------------------------------------------------
 //-------------------------------------------------------------
 GLOBALS_SECTION
@@ -165,14 +167,23 @@ DATA_SECTION
     init_number midptFishery          //time of fishery relative to survey as fraction of year
     !!echo<<"midptFishery = "<<endl<<midptFishery<<endl;
     
-    init_number inpFmTCF   //F for directed Tanner crab fishing mortality
-    init_number inpFmSCF   //F for male and female snow fishing bycatch
-    init_number inpFmRKF   //F for male and female red king fishing bycatch
-    init_number inpFmGTF   //F for male and female trawl fishing bycatch
+    init_number inpFmTCF   //F for males in the directed Tanner crab fishery
+    init_number inpFmSCF   //F for male bycatch in the snow crab fishery
+    init_number inpFmRKF   //F for male bycatch in the BBRKC fishery
+    init_number inpFmGTF   //F for male bycatch in the groundfish fisheries)
     !!echo<<"inpFmTCF = "<<endl<<inpFmTCF<<endl;
     !!echo<<"inpFmSCF = "<<endl<<inpFmSCF<<endl;
     !!echo<<"inpFmRKF = "<<endl<<inpFmRKF<<endl;
     !!echo<<"inpFmGTF = "<<endl<<inpFmGTF<<endl;
+    
+    init_number pAvgLnF_TCFF   //ln-scale offset to F for female bycatch in the directed Tanner crab fishery
+    init_number pAvgLnF_SCFF   //ln-scale offset to F for female bycatch in the snow crab fishery
+    init_number pAvgLnF_RKFF   //ln-scale offset to F for female bycatch in the BBRKC fishery
+    init_number pAvgLnF_GTFF   //ln-scale offset to F for female bycatch in the groundfish fisheries
+    !!echo<<"pAvgLnF_TCFF = "<<endl<<pAvgLnF_TCFF<<endl;
+    !!echo<<"pAvgLnF_SCFF = "<<endl<<pAvgLnF_SCFF<<endl;
+    !!echo<<"pAvgLnF_RKFF = "<<endl<<pAvgLnF_RKFF<<endl;
+    !!echo<<"pAvgLnF_GTFF = "<<endl<<pAvgLnF_GTFF<<endl;
     
     init_matrix selTCF_TotMale(1,nSCs,1,nZs)     //average of last 4 years sel total male new old shell
     init_matrix selTCF_RetMale(1,nSCs,1,nZs)     //average of last 4 years sel retained curve male new old shell
@@ -370,7 +381,7 @@ INITIALIZATION_SECTION
 //-------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------
 PARAMETER_SECTION
-//parameters to be estimated are all ones that begin with init_ and have a positive
+//parameters to be estimated are all ones that begin with init_ and have a positive phase
 //need to have parameters in log space or logit (pRecBeta) to get things to converge
 
     init_number pLnR0(1)
@@ -1215,9 +1226,9 @@ FUNCTION void setFishingMortalityRates(double tcF, double scF, double rkF, doubl
                 //in directed Tanner crab fishery 
                 if (x==FEMALE) {
                     //on all females (discards only)
-                    tcTotF_xsmz(x,sc,ms)      = selTCF_Female*tcF;
-                    tcTotF_East_xsmz(x,sc,ms) = elem_prod(propEast,selTCF_Female)*tcF;
-                    tcTotF_West_xsmz(x,sc,ms) = elem_prod(propWest,selTCF_Female)*tcF;
+                    tcTotF_xsmz(x,sc,ms)      = selTCF_Female*tcF*mfexp(pAvgLnF_TCFF);
+                    tcTotF_East_xsmz(x,sc,ms) = elem_prod(propEast,selTCF_Female)*tcF*mfexp(pAvgLnF_TCFF);
+                    tcTotF_West_xsmz(x,sc,ms) = elem_prod(propWest,selTCF_Female)*tcF*mfexp(pAvgLnF_TCFF);
                     tcRetF_xsmz(x,sc,ms)      = 0.0;
                     tcRetF_East_xsmz(x,sc,ms) = 0.0;
                     tcRetF_West_xsmz(x,sc,ms) = 0.0;
@@ -1246,9 +1257,15 @@ FUNCTION void setFishingMortalityRates(double tcF, double scF, double rkF, doubl
                     }
                 }
                 //in other fisheries
-                scF_xsmz(x,sc,ms) = selSCF(x)*scF;
-                rkF_xsmz(x,sc,ms) = selRKF(x)*rkF;
-                gtF_xsmz(x,sc,ms) = selGTF(x)*gtF;
+                if (x==FEMALE) {
+                    scF_xsmz(x,sc,ms) = selSCF(x)*scF*mfexp(pAvgLnF_SCFF);
+                    rkF_xsmz(x,sc,ms) = selRKF(x)*rkF*mfexp(pAvgLnF_RKFF);
+                    gtF_xsmz(x,sc,ms) = selGTF(x)*gtF*mfexp(pAvgLnF_GTFF);
+                } else {
+                    scF_xsmz(x,sc,ms) = selSCF(x)*scF;
+                    rkF_xsmz(x,sc,ms) = selRKF(x)*rkF;
+                    gtF_xsmz(x,sc,ms) = selGTF(x)*gtF;
+                }
                 
                 //total fishing mortality and survival
                 totF_xsmz(x,sc,ms) = tcTotF_xsmz(x,sc,ms)+scF_xsmz(x,sc,ms)+rkF_xsmz(x,sc,ms)+gtF_xsmz(x,sc,ms);
@@ -2589,6 +2606,10 @@ FUNCTION void writeFishingMortalityRates(double tcF, double scF, double rkF, dou
     post<<endl<<"scF = "<<scF<<endl;    
     post<<endl<<"rkF = "<<rkF<<endl;    
     post<<endl<<"gtF = "<<gtF<<endl;    
+    post<<endl<<"pAvgLnF_TCFF = "<<pAvgLnF_TCFF<<endl;    
+    post<<endl<<"pAvgLnF_SCFF = "<<pAvgLnF_SCFF<<endl;    
+    post<<endl<<"pAvgLnF_RKFF = "<<pAvgLnF_RKFF<<endl;    
+    post<<endl<<"pAvgLnF_GTFF = "<<pAvgLnF_GTFF<<endl;    
     for(int x=1;x<=nXs;x++) {
         post<<endl;
         for(int sc=1;sc<=nSCs;sc++)  {
