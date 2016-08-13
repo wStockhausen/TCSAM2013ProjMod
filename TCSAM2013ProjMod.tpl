@@ -13,6 +13,15 @@
 //
 // Output recruitment and other number quantities in MILLIONS of crab.
 // Output MMB and other biomass quantities        in THOUSANDS t.
+//
+//  20160813: 1. Put under version control at github (wStockhausen/TCSAM2013ProjMod)
+//            2. Renamed tpl to TCSAM2013ProjMod.tpl.
+//            3. moved associated header, source files to "include", "src" sub-folders.
+//            4. Renamed echo file to TCSAM2013ProjMod.chk
+//            5. Input recruitment units REMAIN 1000's of crabs (in accordance 
+//                  with TCSAM2013 output file for projection model)
+//            6. Initial test with 2015 input file worked fine.
+
 //-------------------------------------------------------------
 //-------------------------------------------------------------
 GLOBALS_SECTION
@@ -22,7 +31,7 @@ GLOBALS_SECTION
     #include "rFunctions.hpp"
     #include "StockRecruitFunctions.hpp"
     
-    ofstream echo("TCProjMod2013.ck");
+    ofstream echo("TCSAM2013ProjMod.chk");
     ofstream mcmc;     //stream for mcmc output
 
     
