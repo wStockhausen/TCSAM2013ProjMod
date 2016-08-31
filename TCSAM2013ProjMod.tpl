@@ -23,7 +23,8 @@
 //            6. Initial test with 2015 input file worked fine.
 //            7. Added pAvgLnF_XXXF inputs, where XXX= TCF, SCF, RKF or GTF
 //                  for ln-scale female F offsets
-//
+//  20160831: 1. Added default input file name ("TCSAM2013ProjMod.dat")
+//            2. Added ability to change input file name using -inpFile commandline switch
 //-------------------------------------------------------------
 //-------------------------------------------------------------
 GLOBALS_SECTION
@@ -36,6 +37,7 @@ GLOBALS_SECTION
     ofstream echo("TCSAM2013ProjMod.chk");
     ofstream mcmc;     //stream for mcmc output
 
+    adstring fnInpFile; //input data filename 
     
     int on = 0;
     int flg = 0;
@@ -59,6 +61,12 @@ GLOBALS_SECTION
 DATA_SECTION
 
  LOCAL_CALCS    
+    //configFile
+    fnInpFile = "TCSAM2013ProjMod.dat";//default input filename
+    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-inpFile"))>-1) {
+        fnInpFile = ad_comm::argv[on+1];
+        echo<<"#config file changed to '"<<fnInpFile<<"'"<<endl;
+    }
     //resample
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-rnSeed"))>-1) {
         if (on+1<argc) {
@@ -75,6 +83,9 @@ DATA_SECTION
     }
  END_CALCS   
  
+    !!cout<<"#Reading input file '"<<fnInpFile<<"'"<<endl;
+    !!echo<<"#Reading input file '"<<fnInpFile<<"'"<<endl;
+    !!ad_comm::change_datafile_name(fnInpFile);
     //data inputs
     init_int mMnYr  //assessment model start year
     init_int mMxYr  //assessment model end year
